@@ -1,3 +1,5 @@
+import java.util.logging.*;
+
 public class Main {
 
     public static void main(String[] args) throws Inspector.IllegalPackageException, Inspector.StolenPackageException {
@@ -5,9 +7,15 @@ public class Main {
         MailPackage mypackage = new MailPackage("England", "Russia", new Package("Soap", 128));
         MailPackage mypackage1 = new MailPackage("England", "Russia", new Package("Fish", 10));
         MailPackage mypackage2 = new MailPackage("England", "Russia", new Package("Gold", 1024));
+        MailPackage ston = new MailPackage("England", "Russia", new Package("stones", 0));
         Thief Mike = new Thief(90);
         Thief Serg = new Thief(40);
-        Spy Bond007 = new Spy();
+        Inspector Mark = new Inspector();
+       // Mark.processMail(ston);
+
+         Logger LOG = Logger.getLogger("java.logging.MailMessage");
+         LOG.setLevel(Level.WARNING);
+        Spy Bond007 = new Spy(LOG);
         MailService[] crazypeople = {Mike, Serg, Bond007};
         UntrustworthyMailWorker Pechkin = new UntrustworthyMailWorker(crazypeople);
         Mike.processMail(mypackage);
@@ -16,7 +24,6 @@ public class Main {
         Pechkin.processMail(mypackage);
         System.out.println("Mike stolen " + Mike.getStolenValue());
         System.out.println("Serg stolen " + Serg.getStolenValue());
-
 
     }
 
@@ -35,6 +42,9 @@ public class Main {
     Интерфейс, который задает класс, который может каким-либо образом обработать почтовый объект.
     */
     public static interface MailService {
+        public static final String AUSTIN_POWERS = "Austin Powers";
+        public static final String WEAPONS = "weapons";
+        public static final String BANNED_SUBSTANCE = "banned substance";
         Sendable processMail(Sendable mail) throws Inspector.IllegalPackageException, Inspector.StolenPackageException;
     }
 
@@ -172,7 +182,6 @@ public class Main {
         }
     }
 
-
     public static class Thief implements MailService {
         int cost;
         int stolen = 0;
@@ -191,7 +200,7 @@ public class Main {
 
         @Override
         public Sendable processMail(Sendable mail) {
-            if (mail instanceof MailPackage && ((MailPackage) mail).content.getPrice() >= cost) {
+            if (mail instanceof MailPackage && ((MailPackage) mail).getContent().getPrice() >= cost) {
                 int price = ((MailPackage) mail).content.getPrice();
                 String content = ((MailPackage) mail).content.getContent();
                 stolen = stolen + price;
@@ -207,34 +216,60 @@ public class Main {
     }
 
     public static class Inspector implements MailService {
-        public static final String AUSTIN_POWERS = "Austin Powers";
-        public static final String WEAPONS = "weapons";
-        public static final String BANNED_SUBSTANCE = "banned substance";
+
 
         @Override
         public Sendable processMail(Sendable mail) throws IllegalPackageException, StolenPackageException {
             String content = ((MailPackage) mail).content.getContent();
             if (mail instanceof MailPackage && (content == WEAPONS | content == BANNED_SUBSTANCE)) {
                 throw new IllegalPackageException();
-            }
-            if (mail instanceof MailPackage && content.contains("stones")) {
+            } else if (mail instanceof MailPackage && content.contains("stones")) {
+                System.out.println("STONES");
                 throw new StolenPackageException();
             }
             return mail;
         }
 
         private class IllegalPackageException extends Throwable {
+
+
+
+        public IllegalPackageException() {
         }
+    }
 
         private class StolenPackageException extends Throwable {
+            public StolenPackageException() {
+            }
         }
     }
 
     public static class Spy implements MailService {
 
+//        2.1) Если в качестве отправителя или получателя указан "Austin Powers", то нужно
+//        написать в лог сообщение с уровнем WARN: Detected target mail correspondence: from {from} to {to} "{message}"
+//        2.2) Иначе, необходимо написать в лог сообщение с уровнем INFO: Usual correspondence: from {from} to {to}
+
+        Logger logger = null;
+        Handler handler = null;
+
+        public Spy(Logger logger) {
+            this.logger = logger;
+        }
+
         @Override
-        public Sendable processMail(Sendable mail) throws Inspector.IllegalPackageException, Inspector.StolenPackageException {
-            return null;
+        public Sendable processMail(Sendable mail)  {
+            if (mail instanceof MailMessage & (mail.getFrom().equals("Austin Powers") || mail.getTo().equals("Austin Powers"))){
+
+                logger.log(Level.WARNING,"Detected target mail correspondence: from {0} to {1} \"{2}\"" , new Object [] {mail.getFrom(),mail.getTo(),((MailMessage) mail).message});
+                handler.setLevel(Level.WARNING);
+                handler.setFormatter(new XMLFormatter());
+                logger.addHandler(handler);
+                return mail;
+
+            }
+            else {logger.log(Level.INFO, "Usual correspondence: from {0} to {1}", new Object[] {mail.getFrom(), mail.getTo()});}
+            return mail;
         }
     }
 
@@ -251,7 +286,6 @@ public class Main {
             return realMailService;
         }
 
-
         @Override
         public Sendable processMail(Sendable mail) throws Inspector.IllegalPackageException, Inspector.StolenPackageException {
             Sendable outmail = mail;
@@ -262,6 +296,7 @@ public class Main {
             return realMailService.processMail(outmail);
         }
     }
+
 }
 
 
