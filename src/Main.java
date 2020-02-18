@@ -10,9 +10,16 @@ public class Main {
 
         Thief Mike = new Thief(90);
         Thief Serg = new Thief(40);
+        Spy Bond007 = new Spy();
+        MailService [] crazypeople = {Mike,Serg,Bond007};
+
+        UntrustworthyMailWorker Pechkin = new UntrustworthyMailWorker(crazypeople );
+
+
         Mike.processMail(mypackage);
         Serg.processMail(mypackage1);
         Serg.processMail(mypackage2);
+        Pechkin.processMail(mypackage);
         System.out.println("Mike stolen "+Mike.getStolenValue());
         System.out.println("Serg stolen "+Serg.getStolenValue());
 
@@ -23,6 +30,7 @@ public class Main {
     У такой сущности можно получить от кого и кому направляется письмо.
     */
     public static interface Sendable {
+
         String getFrom();
 
         String getTo();
@@ -156,7 +164,7 @@ public class Main {
     Интерфейс, который задает класс, который может каким-либо образом обработать почтовый объект.
     */
     public static interface MailService {
-        Sendable processMail(Sendable mail);
+        Sendable processMail(Sendable mail) throws Inspector.IllegalPackageException, Inspector.StolenPackageException;
     }
 
     /*
@@ -171,23 +179,7 @@ public class Main {
         }
     }
 
-    public static class UntrustworthyMailWorker implements MailService{
-        MailService [] unworpax ;
-        RealMailService unwor ;
-        public UntrustworthyMailWorker(MailService [] unworpax){
-            this.unworpax = unworpax;
-            this.unwor = new RealMailService();
-        }
-        public MailService getRealMailService (){
-            return unwor;
-        }
 
-
-        @Override
-        public Sendable processMail(Sendable mail) {
-            return null;
-        }
-    }
 
     public static class Thief implements MailService {
         int cost;
@@ -195,6 +187,9 @@ public class Main {
 
         public Thief(int cost) {
             this.cost = cost;
+        }
+        public Thief() {
+            this.cost = 0;
         }
 
         public int getStolenValue() {
@@ -214,6 +209,62 @@ public class Main {
                 return thmail;
 
             }
+            return mail;
+        }
+    }
+    public static class Inspector implements MailService {
+        public static final String AUSTIN_POWERS = "Austin Powers";
+        public static final String WEAPONS = "weapons";
+        public static final String BANNED_SUBSTANCE = "banned substance";
+
+        @Override
+        public Sendable processMail(Sendable mail) throws IllegalPackageException, StolenPackageException {
+            String content = ((MailPackage) mail).content.getContent();
+            if (mail instanceof MailPackage && ( content == WEAPONS | content == BANNED_SUBSTANCE )) {
+                throw new  IllegalPackageException();}
+            if (mail instanceof MailPackage &&  content.contains("stones") ) {
+                throw new  StolenPackageException();}
+
+
+            return mail;
+        }
+
+        private class IllegalPackageException extends Throwable {
+        }
+
+        private class StolenPackageException extends Throwable {
+        }
+    }
+    public static class Spy implements MailService {
+
+        @Override
+        public Sendable processMail(Sendable mail) throws Inspector.IllegalPackageException, Inspector.StolenPackageException {
+            return null;
+        }
+    }
+    public static class UntrustworthyMailWorker implements MailService{
+        MailService [] mailServices ;
+        RealMailService realMailService;
+
+        public UntrustworthyMailWorker(MailService [] mailServices){
+            this.mailServices = mailServices;
+
+        }
+        public MailService getRealMailService (){
+            return realMailService;
+        }
+
+
+        @Override
+        public Sendable processMail(Sendable mail) {
+            for (int i = 0; i < mailServices.length; i++) {
+                MailService mix = mailServices[i];
+
+
+                
+            }
+            
+            
             return mail;
         }
     }
