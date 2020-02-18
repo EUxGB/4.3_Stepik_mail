@@ -1,27 +1,22 @@
 public class Main {
 
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws Inspector.IllegalPackageException, Inspector.StolenPackageException {
         //Thieves
-        MailPackage mypackage = new MailPackage("England","Russia",new Package("Soap",128));
-        MailPackage mypackage1 = new MailPackage("England","Russia",new Package("Fish",10));
-        MailPackage mypackage2 = new MailPackage("England","Russia",new Package("Gold",1024));
-
-
+        MailPackage mypackage = new MailPackage("England", "Russia", new Package("Soap", 128));
+        MailPackage mypackage1 = new MailPackage("England", "Russia", new Package("Fish", 10));
+        MailPackage mypackage2 = new MailPackage("England", "Russia", new Package("Gold", 1024));
         Thief Mike = new Thief(90);
         Thief Serg = new Thief(40);
         Spy Bond007 = new Spy();
-        MailService [] crazypeople = {Mike,Serg,Bond007};
-
-        UntrustworthyMailWorker Pechkin = new UntrustworthyMailWorker(crazypeople );
-
-
+        MailService[] crazypeople = {Mike, Serg, Bond007};
+        UntrustworthyMailWorker Pechkin = new UntrustworthyMailWorker(crazypeople);
         Mike.processMail(mypackage);
         Serg.processMail(mypackage1);
         Serg.processMail(mypackage2);
         Pechkin.processMail(mypackage);
-        System.out.println("Mike stolen "+Mike.getStolenValue());
-        System.out.println("Serg stolen "+Serg.getStolenValue());
+        System.out.println("Mike stolen " + Mike.getStolenValue());
+        System.out.println("Serg stolen " + Serg.getStolenValue());
+
 
     }
 
@@ -34,6 +29,13 @@ public class Main {
         String getFrom();
 
         String getTo();
+    }
+
+    /*
+    Интерфейс, который задает класс, который может каким-либо образом обработать почтовый объект.
+    */
+    public static interface MailService {
+        Sendable processMail(Sendable mail) throws Inspector.IllegalPackageException, Inspector.StolenPackageException;
     }
 
     /*
@@ -151,20 +153,11 @@ public class Main {
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-
             Package aPackage = (Package) o;
-
             if (price != aPackage.price) return false;
             if (!content.equals(aPackage.content)) return false;
-
             return true;
         }
-    }
-    /*
-    Интерфейс, который задает класс, который может каким-либо образом обработать почтовый объект.
-    */
-    public static interface MailService {
-        Sendable processMail(Sendable mail) throws Inspector.IllegalPackageException, Inspector.StolenPackageException;
     }
 
     /*
@@ -180,7 +173,6 @@ public class Main {
     }
 
 
-
     public static class Thief implements MailService {
         int cost;
         int stolen = 0;
@@ -188,6 +180,7 @@ public class Main {
         public Thief(int cost) {
             this.cost = cost;
         }
+
         public Thief() {
             this.cost = 0;
         }
@@ -205,13 +198,14 @@ public class Main {
                 price = 0;
                 content = "stones instead of " + content;
                 MailPackage thmail = new MailPackage(mail.getFrom(), mail.getTo(), new Package(content, price));
-                System.out.println(thmail.getFrom()+" "+thmail.getTo()+" *** " +thmail.content.content+" **** " +thmail.content.price);
+                System.out.println(thmail.getFrom() + " " + thmail.getTo() + " *** " + thmail.content.content + " **** " + thmail.content.price);
                 return thmail;
 
             }
             return mail;
         }
     }
+
     public static class Inspector implements MailService {
         public static final String AUSTIN_POWERS = "Austin Powers";
         public static final String WEAPONS = "weapons";
@@ -220,12 +214,12 @@ public class Main {
         @Override
         public Sendable processMail(Sendable mail) throws IllegalPackageException, StolenPackageException {
             String content = ((MailPackage) mail).content.getContent();
-            if (mail instanceof MailPackage && ( content == WEAPONS | content == BANNED_SUBSTANCE )) {
-                throw new  IllegalPackageException();}
-            if (mail instanceof MailPackage &&  content.contains("stones") ) {
-                throw new  StolenPackageException();}
-
-
+            if (mail instanceof MailPackage && (content == WEAPONS | content == BANNED_SUBSTANCE)) {
+                throw new IllegalPackageException();
+            }
+            if (mail instanceof MailPackage && content.contains("stones")) {
+                throw new StolenPackageException();
+            }
             return mail;
         }
 
@@ -235,6 +229,7 @@ public class Main {
         private class StolenPackageException extends Throwable {
         }
     }
+
     public static class Spy implements MailService {
 
         @Override
@@ -242,33 +237,32 @@ public class Main {
             return null;
         }
     }
-    public static class UntrustworthyMailWorker implements MailService{
-        MailService [] mailServices ;
-        RealMailService realMailService;
 
-        public UntrustworthyMailWorker(MailService [] mailServices){
+    public static class UntrustworthyMailWorker implements MailService {
+        MailService[] mailServices;
+        RealMailService realMailService = new RealMailService();
+
+        public UntrustworthyMailWorker(MailService[] mailServices) {
             this.mailServices = mailServices;
 
         }
-        public MailService getRealMailService (){
+
+        public MailService getRealMailService() {
             return realMailService;
         }
 
 
         @Override
-        public Sendable processMail(Sendable mail) {
+        public Sendable processMail(Sendable mail) throws Inspector.IllegalPackageException, Inspector.StolenPackageException {
+            Sendable outmail = mail;
             for (int i = 0; i < mailServices.length; i++) {
-                MailService mix = mailServices[i];
+                outmail = mailServices[i].processMail(outmail);
 
-
-                
             }
-            
-            
-            return mail;
+            return realMailService.processMail(outmail);
         }
     }
-    }
+}
 
 
 
